@@ -17,12 +17,11 @@
 
 package com.dangdang.ddframe;
 
+import com.dangdang.ddframe.job.AllSpringJobTests;
+import com.dangdang.ddframe.reg.AllSpringRegTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import com.dangdang.ddframe.job.AllSpringJobTests;
-import com.dangdang.ddframe.reg.AllSpringRegTests;
 
 
 @RunWith(Suite.class)

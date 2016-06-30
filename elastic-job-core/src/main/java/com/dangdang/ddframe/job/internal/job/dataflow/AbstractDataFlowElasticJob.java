@@ -20,11 +20,12 @@ package com.dangdang.ddframe.job.internal.job.dataflow;
 import com.dangdang.ddframe.job.api.DataFlowElasticJob;
 import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
 import com.dangdang.ddframe.job.api.JobExecutionSingleShardingContext;
+import com.dangdang.ddframe.job.exception.JobException;
 import com.dangdang.ddframe.job.internal.job.AbstractElasticJob;
 import com.dangdang.ddframe.job.internal.job.AbstractJobExecutionShardingContext;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.JobExecutionException;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -81,14 +82,15 @@ public abstract class AbstractDataFlowElasticJob<T, C extends AbstractJobExecuti
     
     @Override
     protected final void executeJob(final JobExecutionMultipleShardingContext shardingContext) {
+        boolean streamingProcess = getJobFacade().isStreamingProcess();
         if (DataFlowType.THROUGHPUT == dataFlowType) {
-            if (isStreamingProcess()) {
+            if (streamingProcess) {
                 executeThroughputStreamingJob(shardingContext);
             } else {
                 executeThroughputOneOffJob(shardingContext);
             }
         } else if (DataFlowType.SEQUENCE == dataFlowType) {
-            if (isStreamingProcess()) {
+            if (streamingProcess) {
                 executeSequenceStreamingJob(shardingContext);
             } else {
                 executeSequenceOneOffJob(shardingContext);
@@ -98,23 +100,29 @@ public abstract class AbstractDataFlowElasticJob<T, C extends AbstractJobExecuti
     
     private void executeThroughputStreamingJob(final JobExecutionMultipleShardingContext shardingContext) {
         List<T> data = fetchDataForThroughput(shardingContext);
-        while (null != data && !data.isEmpty() && getJobFacade().isEligibleForJobRunning()) {
+        while (!CollectionUtils.isEmpty(data)) {
             processDataForThroughput(shardingContext, data);
+            if (!getJobFacade().isEligibleForJobRunning()) {
+                break;
+            }
             data = fetchDataForThroughput(shardingContext);
         }
     }
     
     private void executeThroughputOneOffJob(final JobExecutionMultipleShardingContext shardingContext) {
         List<T> data = fetchDataForThroughput(shardingContext);
-        if (null != data && !data.isEmpty()) {
+        if (!CollectionUtils.isEmpty(data)) {
             processDataForThroughput(shardingContext, data);
         }
     }
     
     private void executeSequenceStreamingJob(final JobExecutionMultipleShardingContext shardingContext) {
         Map<Integer, List<T>> data = fetchDataForSequence(shardingContext);
-        while (!data.isEmpty() && getJobFacade().isEligibleForJobRunning()) {
+        while (!data.isEmpty()) {
             processDataForSequence(shardingContext, data);
+            if (!getJobFacade().isEligibleForJobRunning()) {
+                break;
+            }
             data = fetchDataForSequence(shardingContext);
         }
     }
@@ -216,8 +224,8 @@ public abstract class AbstractDataFlowElasticJob<T, C extends AbstractJobExecuti
     }
     
     @Override
-    public void handleJobExecutionException(final JobExecutionException jobExecutionException) throws JobExecutionException {
-        log.error("Elastic job: exception occur in job processing...", jobExecutionException.getCause());
+    public void handleJobExecutionException(final JobException jobException) {
+        log.error("Elastic job: exception occur in job processing...", jobException.getCause());
     }
     
     private void latchAwait(final CountDownLatch latch) {

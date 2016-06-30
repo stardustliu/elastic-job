@@ -17,27 +17,27 @@
 
 package com.dangdang.ddframe.job.internal.statistics;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.verify;
-
+import com.dangdang.ddframe.job.api.config.JobConfigurationFactory;
+import com.dangdang.ddframe.job.fixture.TestJob;
+import com.dangdang.ddframe.job.internal.server.ServerService;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.quartz.JobExecutionException;
 import org.unitils.util.ReflectionUtils;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.fixture.TestJob;
-import com.dangdang.ddframe.job.internal.server.ServerService;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.verify;
 
 public final class ProcessCountJobTest {
     
     @Mock
     private ServerService serverService;
     
-    private final ProcessCountJob processCountJob = new ProcessCountJob(null, new JobConfiguration(ProcessCountJobTest.class.getName(), TestJob.class, 3, "0/1 * * * * ?"));
+    private final ProcessCountJob processCountJob = new ProcessCountJob(null, 
+            JobConfigurationFactory.createSimpleJobConfigurationBuilder(ProcessCountJobTest.class.getName(), 
+                    TestJob.class, 3, "0/1 * * * * ?").build());
     
     @Before
     public void setUp() throws NoSuchFieldException {
@@ -46,7 +46,7 @@ public final class ProcessCountJobTest {
     }
     
     @Test
-    public void assertRun() throws JobExecutionException {
+    public void assertRun() {
         ProcessCountStatistics.incrementProcessSuccessCount(ProcessCountJobTest.class.getName());
         ProcessCountStatistics.incrementProcessSuccessCount(ProcessCountJobTest.class.getName());
         ProcessCountStatistics.incrementProcessFailureCount(ProcessCountJobTest.class.getName());

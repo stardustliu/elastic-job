@@ -17,11 +17,12 @@
 
 package com.dangdang.ddframe.job.internal.schedule;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import com.dangdang.ddframe.job.api.listener.ElasticJobListener;
 import com.dangdang.ddframe.job.internal.config.ConfigurationService;
 import com.dangdang.ddframe.job.internal.election.LeaderElectionService;
 import com.dangdang.ddframe.job.internal.execution.ExecutionService;
+import com.dangdang.ddframe.job.api.config.impl.JobType;
 import com.dangdang.ddframe.job.internal.listener.ListenerManager;
 import com.dangdang.ddframe.job.internal.monitor.MonitorService;
 import com.dangdang.ddframe.job.internal.server.ServerService;
@@ -77,11 +78,13 @@ public class SchedulerFacade {
      */
     public void registerStartUpInfo() {
         listenerManager.startAllListeners();
-        leaderElectionService.leaderElection();
+        leaderElectionService.leaderForceElection();
         configService.persistJobConfiguration();
         serverService.persistServerOnline();
-        serverService.clearJobStoppedStatus();
-        statisticsService.startProcessCountJob();
+        serverService.clearJobPausedStatus();
+        if (JobType.DATA_FLOW == configService.getJobType()) {
+            statisticsService.startProcessCountJob();
+        }
         shardingService.setReshardingFlag();
         monitorService.listen();
     }
@@ -91,7 +94,10 @@ public class SchedulerFacade {
      */
     public void releaseJobResource() {
         monitorService.close();
-        statisticsService.stopProcessCountJob();
+        if (JobType.DATA_FLOW.equals(configService.getJobType())) {
+            statisticsService.stopProcessCountJob();
+        }
+        serverService.removeServerStatus();
     }
     
     /**

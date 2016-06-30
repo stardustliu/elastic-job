@@ -10,6 +10,7 @@
 
 # Release Notes
 * elastic-job&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[![Maven Status](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job)
+* elastic-job-api&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[![Maven Status](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-api/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-api)
 * elastic-job-core&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[![Maven Status](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-core)
 * elastic-job-spring&nbsp;&nbsp;&nbsp;[![Maven Status](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-spring/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.dangdang/elastic-job-spring)
 
@@ -24,7 +25,7 @@
 * 曹昊 [当当网](http://www.dangdang.com/) caohao@dangdang.com
 * 江树建 [当当网](http://www.dangdang.com/) jiangshujian@dangdang.com
 
-**讨论QQ群：**430066234（不限于Elastic-Job，包括分布式，定时任务相关以及其他互联网技术交流）
+**讨论QQ群：**430066234（不限于Elastic-Job，包括分布式，定时任务相关以及其他互联网技术交流。由于QQ群已接近饱和，我们希望您在申请加群之前仔细阅读文档，并在加群申请中正确回答问题，以及在申请时写上您的姓名和公司名称。并且在入群后及时修改群名片。否则我们将有权拒绝您的入群申请。谢谢合作。）
 
 ## Elastic-Job主要功能
 
@@ -64,7 +65,7 @@
 
 [Release Notes](http://dangdangdotcom.github.io/elastic-job/post/release_notes/)
 
-[1.0.2接口变更声明](http://dangdangdotcom.github.io/elastic-job/post/update_notes_1.0.2/)
+[1.1.0接口变更声明](http://dangdangdotcom.github.io/elastic-job/post/update_notes_1.1.0/)
 
 [何为分布式作业？](http://dangdangdotcom.github.io/elastic-job/post/distribution/)
 
@@ -145,9 +146,9 @@ public class MyElasticJob extends AbstractSimpleElasticJob {
                         http://www.dangdang.com/schema/ddframe/job/job.xsd
                         ">
     <!--配置作业注册中心 -->
-    <reg:zookeeper id="regCenter" serverLists=" yourhost:2181" namespace="dd-job" baseSleepTimeMilliseconds="1000" maxSleepTimeMilliseconds="3000" maxRetries="3" />
+    <reg:zookeeper id="regCenter" server-lists="yourhost:2181" namespace="dd-job" base-sleep-time-milliseconds="1000" max-sleep-time-milliseconds="3000" max-retries="3" />
 
     <!-- 配置作业-->
-    <job:bean id="myElasticJob" class="xxx.MyElasticJob" regCenter="regCenter" cron="0/10 * * * * ?"   shardingTotalCount="3" shardingItemParameters="0=A,1=B,2=C" />
+    <job:simple id="myElasticJob" class="xxx.MyElasticJob" registry-center-ref="regCenter" cron="0/10 * * * * ?"   sharding-total-count="3" sharding-item-parameters="0=A,1=B,2=C" />
 </beans>
 ```

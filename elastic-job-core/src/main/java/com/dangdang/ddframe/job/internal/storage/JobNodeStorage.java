@@ -17,7 +17,7 @@
 
 package com.dangdang.ddframe.job.internal.storage;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import com.dangdang.ddframe.job.exception.JobException;
 import com.dangdang.ddframe.reg.base.CoordinatorRegistryCenter;
 import com.dangdang.ddframe.reg.exception.RegExceptionHandler;
@@ -98,12 +98,18 @@ public class JobNodeStorage {
     /**
      * 如果存在则创建作业节点.
      * 
+     * <p>如果作业根节点不存在表示作业已经停止, 不再继续创建节点.</p>
+     * 
      * @param node 作业节点名称
      */
     public void createJobNodeIfNeeded(final String node) {
-        if (!isJobNodeExisted(node)) {
+        if (isJobRootNodeExisted() && !isJobNodeExisted(node)) {
             coordinatorRegistryCenter.persist(jobNodePath.getFullPath(node), "");
         }
+    }
+    
+    private boolean isJobRootNodeExisted() {
+        return coordinatorRegistryCenter.isExisted("/" + jobConfiguration.getJobName());
     }
     
     /**

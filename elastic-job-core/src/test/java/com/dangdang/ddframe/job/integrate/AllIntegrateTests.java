@@ -17,6 +17,7 @@
 
 package com.dangdang.ddframe.job.integrate;
 
+import com.dangdang.ddframe.job.integrate.std.integrated.ScriptElasticJobTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -28,7 +29,7 @@ import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThrou
 import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobForExecuteThrowsExceptionTest;
 import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobForMultipleThreadsTest;
 import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobForNotMonitorTest;
-import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobForStoppedTest;
+import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobForPausedTest;
 import com.dangdang.ddframe.job.integrate.std.dataflow.throughput.StreamingThroughputDataFlowElasticJobTest;
 import com.dangdang.ddframe.job.integrate.std.simple.DisabledJobTest;
 import com.dangdang.ddframe.job.integrate.std.simple.SimpleElasticJobTest;
@@ -45,7 +46,8 @@ import com.dangdang.ddframe.job.integrate.std.simple.SimpleElasticJobTest;
     StreamingThroughputDataFlowElasticJobForMultipleThreadsTest.class, 
     StreamingThroughputDataFlowElasticJobForExecuteFailureTest.class, 
     StreamingThroughputDataFlowElasticJobForExecuteThrowsExceptionTest.class, 
-    StreamingThroughputDataFlowElasticJobForStoppedTest.class
+    StreamingThroughputDataFlowElasticJobForPausedTest.class,
+    ScriptElasticJobTest.class
     })
 public final class AllIntegrateTests {
 }

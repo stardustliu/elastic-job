@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import com.dangdang.ddframe.job.internal.env.LocalHostService;
 import com.dangdang.ddframe.job.internal.execution.ExecutionNode;
 import com.dangdang.ddframe.job.internal.schedule.JobRegistry;
@@ -84,7 +84,7 @@ public class FailoverService {
     }
     
     private boolean needFailover() {
-        return jobNodeStorage.isJobNodeExisted(FailoverNode.ITEMS_ROOT) && !jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).isEmpty() && serverService.isServerReady();
+        return jobNodeStorage.isJobNodeExisted(FailoverNode.ITEMS_ROOT) && !jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).isEmpty() && serverService.isLocalhostServerReady();
     }
     
     /**
@@ -154,7 +154,7 @@ public class FailoverService {
             log.debug("Elastic job: failover job begin, crashed item:{}.", crashedItem);
             jobNodeStorage.fillEphemeralJobNode(FailoverNode.getExecutionFailoverNode(crashedItem), localHostService.getIp());
             jobNodeStorage.removeJobNodeIfExisted(FailoverNode.getItemsNode(crashedItem));
-            JobRegistry.getInstance().getJobScheduler(jobConfiguration.getJobName()).triggerJob();
+            JobRegistry.getInstance().getJobScheduleController(jobConfiguration.getJobName()).triggerJob();
         }
     }
 }

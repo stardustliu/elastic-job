@@ -17,11 +17,10 @@
 
 package com.dangdang.ddframe.job.integrate;
 
+import com.dangdang.ddframe.job.api.ElasticJob;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import org.junit.After;
 import org.junit.Before;
-
-import com.dangdang.ddframe.job.api.ElasticJob;
-import com.dangdang.ddframe.job.api.JobConfiguration;
 
 public abstract class AbstractBaseStdJobAutoInitTest extends AbstractBaseStdJobTest {
     
@@ -36,7 +35,7 @@ public abstract class AbstractBaseStdJobAutoInitTest extends AbstractBaseStdJobT
     public void autoJobInit() {
         setJobConfig(getJobConfig());
         initJob();
-        assertRegCenterCommonInfo();
+        assertRegCenterCommonInfoWithEnabled();
     }
     
     @After

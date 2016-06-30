@@ -17,14 +17,12 @@
 
 package com.dangdang.ddframe.job.plugin.job.type.fixture;
 
-import java.util.List;
-
-import org.quartz.JobExecutionException;
-
 import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
+import com.dangdang.ddframe.job.exception.JobException;
 import com.dangdang.ddframe.job.plugin.job.type.dataflow.AbstractBatchThroughputDataFlowElasticJob;
-
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 public final class FooUnstreamingBatchThroughputDataFlowElasticJob extends AbstractBatchThroughputDataFlowElasticJob<Object> {
@@ -44,18 +42,13 @@ public final class FooUnstreamingBatchThroughputDataFlowElasticJob extends Abstr
                 if (jobCaller.processData(each)) {
                     result++;
                 }
-            } catch (final NullPointerException ex) {
+            } catch (final IllegalStateException ex) {
             }
         }
         return result;
     }
     
     @Override
-    public boolean isStreamingProcess() {
-        return false;
-    }
-    
-    @Override
-    public void handleJobExecutionException(final JobExecutionException jobExecutionException) throws JobExecutionException {
+    public void handleJobExecutionException(final JobException jobException) {
     }
 }

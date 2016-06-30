@@ -17,24 +17,24 @@
 
 package com.dangdang.ddframe.job.internal.offset;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfigurationFactory;
+import com.dangdang.ddframe.job.fixture.TestJob;
+import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.unitils.util.ReflectionUtils;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.fixture.TestJob;
-import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 
 public final class OffsetServiceTest {
@@ -42,7 +42,7 @@ public final class OffsetServiceTest {
     @Mock
     private JobNodeStorage jobNodeStorage;
     
-    private final JobConfiguration jobConfig = new JobConfiguration("testJob", TestJob.class, 3, "0/1 * * * * ?");
+    private final JobConfiguration jobConfig = JobConfigurationFactory.createSimpleJobConfigurationBuilder("testJob", TestJob.class, 3, "0/1 * * * * ?").build();
     
     private OffsetService offsetService = new OffsetService(null, jobConfig);
     

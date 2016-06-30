@@ -45,10 +45,12 @@ weight=10
 | processCountIntervalSeconds      | 否      | 统计作业处理数据数量的间隔时间                                                   |
 | concurrentDataProcessThreadCount | 否      | 同时处理数据的并发线程数                                                        |
 | fetchDataCount                   | 否      | 每次抓取的数据量                                                               |
+| streaming-process                |否       | 是否流式处理数据<br />如果流式处理数据, 则`fetchData`不返回空结果将持续执行作业<br />如果非流式处理数据, 则处理数据完成后作业结束<br />|
 | maxTimeDiffSeconds               | 否      | 允许的本机与注册中心的时间误差秒数                                               |
 | failover                         | 否      | 是否开启失效转移                                                               |
 | misfire                          | 否      | 是否开启错过任务重新执行                                                        |
 | description                      | 否      | 作业描述信息                                                                   |
+| scriptCommandLine                | 否      | 脚本型作业作业执行命令行                                                        |
 
 ### servers节点
 
@@ -62,8 +64,9 @@ weight=10
 | sharding                         | 否      | 该作业服务器分到的作业分片项<br />多个分片项用逗号分隔<br />如：`0, 1, 2`代表该服务器执行第`1, 2, 3`片分片 |
 | processSuccessCount              | 否      | 统计一段时间内处理数据成功的数量<br />统计间隔可通过`config\processCountIntervalSeconds`配置 |
 | processFailureCount              | 否      | 统计一段时间内处理数据失败的数量<br />统计间隔可通过`config\processCountIntervalSeconds`配置 |
-| stoped                           | 否      | 暂停作业的标记，暂停的作业不会终止调度器运行。作业程序再次启动时不会清理此标记                   |
+| paused                           | 否      | 暂停作业的标记，暂停的作业不会终止调度器运行。作业程序再次启动时不会清理此标记                   |
 | shutdown                         | 否      | 关闭作业的标记，关闭的作业将停止调度，并可通过控制台删除。只有作业程序再次启动时才会清理此标记     |
+| trigger                          | 否      | 立刻触发作业的标记，作业在不与上次运行中作业冲突的情况下将立刻启动，并在启动后自动清理此标记       |
 
 ### execution节点
 
@@ -77,6 +80,7 @@ weight=10
 | lastBeginTime                    | 否      | 该分片项最近一次的开始执行时间                                                  |
 | nextFireTime                     | 否      | 该分片项下次作业触发时间                                                       |
 | lastCompleteTime                 | 否      | 该分片项最近一次的结束执行时间                                                  |
+| misfire                          | 否      | 是否开启错过任务重新执行                                                        |
 
 ### leader节点
 

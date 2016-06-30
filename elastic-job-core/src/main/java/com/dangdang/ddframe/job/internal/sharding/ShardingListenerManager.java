@@ -21,7 +21,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import com.dangdang.ddframe.job.internal.config.ConfigurationNode;
 import com.dangdang.ddframe.job.internal.execution.ExecutionService;
 import com.dangdang.ddframe.job.internal.listener.AbstractJobListener;
@@ -73,7 +73,7 @@ public class ShardingListenerManager extends AbstractListenerManager {
         
         @Override
         protected void dataChanged(final CuratorFramework client, final TreeCacheEvent event, final String path) {
-            if (isServersCrashed(event, path) || serverNode.isServerDisabledPath(path)) {
+            if (isServersCrashed(event, path) || serverNode.isServerDisabledPath(path) || serverNode.isServerShutdownPath(path)) {
                 shardingService.setReshardingFlag();
             }
         }

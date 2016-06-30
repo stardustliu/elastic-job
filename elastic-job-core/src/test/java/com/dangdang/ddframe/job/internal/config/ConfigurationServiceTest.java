@@ -17,6 +17,28 @@
 
 package com.dangdang.ddframe.job.internal.config;
 
+import com.dangdang.ddframe.job.api.DataFlowElasticJob;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfigurationFactory;
+import com.dangdang.ddframe.job.api.config.impl.DataFlowJobConfiguration;
+import com.dangdang.ddframe.job.api.config.impl.ScriptJobConfiguration;
+import com.dangdang.ddframe.job.exception.JobConflictException;
+import com.dangdang.ddframe.job.exception.ShardingItemParametersException;
+import com.dangdang.ddframe.job.exception.TimeDiffIntolerableException;
+import com.dangdang.ddframe.job.fixture.TestJob;
+import com.dangdang.ddframe.job.internal.sharding.strategy.JobShardingStrategy;
+import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
+import com.dangdang.ddframe.job.plugin.job.type.integrated.ScriptElasticJob;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.unitils.util.ReflectionUtils;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -25,30 +47,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.unitils.util.ReflectionUtils;
-
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.exception.JobConflictException;
-import com.dangdang.ddframe.job.exception.ShardingItemParametersException;
-import com.dangdang.ddframe.job.exception.TimeDiffIntolerableException;
-import com.dangdang.ddframe.job.fixture.TestJob;
-import com.dangdang.ddframe.job.internal.sharding.strategy.JobShardingStrategy;
-import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
-
 public final class ConfigurationServiceTest {
     
     @Mock
     private JobNodeStorage jobNodeStorage;
     
-    private final JobConfiguration jobConfig = new JobConfiguration("testJob", TestJob.class, 3, "0/1 * * * * ?");
+    private final JobConfiguration jobConfig = JobConfigurationFactory.createSimpleJobConfigurationBuilder("testJob", TestJob.class, 3, "0/1 * * * * ?").build();
     
     private final ConfigurationService configService = new ConfigurationService(null, jobConfig);
     
@@ -76,21 +80,7 @@ public final class ConfigurationServiceTest {
     public void assertPersistNewJobConfiguration() {
         when(jobNodeStorage.getJobConfiguration()).thenReturn(jobConfig);
         configService.persistJobConfiguration();
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.JOB_CLASS, TestJob.class.getCanonicalName());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.SHARDING_TOTAL_COUNT, jobConfig.getShardingTotalCount());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.SHARDING_ITEM_PARAMETERS, jobConfig.getShardingItemParameters());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.JOB_PARAMETER, jobConfig.getJobParameter());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.CRON, jobConfig.getCron());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MONITOR_EXECUTION, jobConfig.isMonitorExecution());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.PROCESS_COUNT_INTERVAL_SECONDS, jobConfig.getProcessCountIntervalSeconds());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.CONCURRENT_DATA_PROCESS_THREAD_COUNT, jobConfig.getConcurrentDataProcessThreadCount());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.FETCH_DATA_COUNT, jobConfig.getFetchDataCount());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MAX_TIME_DIFF_SECONDS, jobConfig.getMaxTimeDiffSeconds());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.FAILOVER, jobConfig.isFailover());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MISFIRE, jobConfig.isMisfire());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.JOB_SHARDING_STRATEGY_CLASS, jobConfig.getJobShardingStrategyClass());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.DESCRIPTION, jobConfig.getDescription());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MONITOR_PORT, jobConfig.getMonitorPort());
+        verifyPersistJobConfiguration();
     }
     
     @Test
@@ -99,15 +89,27 @@ public final class ConfigurationServiceTest {
         when(jobNodeStorage.getJobNodeData(ConfigurationNode.JOB_CLASS)).thenReturn(TestJob.class.getCanonicalName());
         when(jobNodeStorage.getJobConfiguration()).thenReturn(jobConfig);
         configService.persistJobConfiguration();
+        verifyPersistJobConfiguration();
+    }
+    
+    private void verifyPersistJobConfiguration() {
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.JOB_CLASS, TestJob.class.getCanonicalName());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.SHARDING_TOTAL_COUNT, jobConfig.getShardingTotalCount());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.SHARDING_ITEM_PARAMETERS, jobConfig.getShardingItemParameters());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.JOB_PARAMETER, jobConfig.getJobParameter());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.CRON, jobConfig.getCron());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MONITOR_EXECUTION, jobConfig.isMonitorExecution());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.PROCESS_COUNT_INTERVAL_SECONDS, jobConfig.getProcessCountIntervalSeconds());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.CONCURRENT_DATA_PROCESS_THREAD_COUNT, jobConfig.getConcurrentDataProcessThreadCount());
-        verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.FETCH_DATA_COUNT, jobConfig.getFetchDataCount());
+        if (DataFlowElasticJob.class.isAssignableFrom(jobConfig.getJobClass())) {
+            DataFlowJobConfiguration dataFlowJobConfiguration = (DataFlowJobConfiguration) jobConfig;
+            verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.PROCESS_COUNT_INTERVAL_SECONDS, dataFlowJobConfiguration.getProcessCountIntervalSeconds());
+            verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.CONCURRENT_DATA_PROCESS_THREAD_COUNT, dataFlowJobConfiguration.getConcurrentDataProcessThreadCount());
+            verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.FETCH_DATA_COUNT, dataFlowJobConfiguration.getFetchDataCount());
+            verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.STREAMING_PROCESS, dataFlowJobConfiguration.isStreamingProcess());
+        }
+        if (ScriptElasticJob.class.isAssignableFrom(jobConfig.getJobClass())) {
+            ScriptJobConfiguration scriptJobConfiguration = (ScriptJobConfiguration) jobConfig;
+            verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.SCRIPT_COMMAND_LINE, scriptJobConfiguration.getScriptCommandLine());
+        }
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MAX_TIME_DIFF_SECONDS, jobConfig.getMaxTimeDiffSeconds());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.FAILOVER, jobConfig.isFailover());
         verify(jobNodeStorage).fillJobNodeIfNullOrOverwrite(ConfigurationNode.MISFIRE, jobConfig.isMisfire());
@@ -120,6 +122,12 @@ public final class ConfigurationServiceTest {
     public void assertGetShardingTotalCount() {
         when(jobNodeStorage.getJobNodeDataDirectly(ConfigurationNode.SHARDING_TOTAL_COUNT)).thenReturn("3");
         assertThat(configService.getShardingTotalCount(), is(3));
+        verify(jobNodeStorage).getJobNodeDataDirectly(ConfigurationNode.SHARDING_TOTAL_COUNT);
+    }
+    
+    @Test
+    public void assertGetShardingTotalCountWhenNodeIsNotExisted() {
+        assertThat(configService.getShardingTotalCount(), is(-1));
         verify(jobNodeStorage).getJobNodeDataDirectly(ConfigurationNode.SHARDING_TOTAL_COUNT);
     }
     
@@ -201,6 +209,13 @@ public final class ConfigurationServiceTest {
         when(jobNodeStorage.getJobNodeData(ConfigurationNode.FETCH_DATA_COUNT)).thenReturn("1");
         assertThat(configService.getFetchDataCount(), is(1));
         verify(jobNodeStorage).getJobNodeData(ConfigurationNode.FETCH_DATA_COUNT);
+    }
+    
+    @Test
+    public void assertIsNotStreamingProcess() {
+        when(jobNodeStorage.getJobNodeData(ConfigurationNode.STREAMING_PROCESS)).thenReturn("false");
+        assertFalse(configService.isStreamingProcess());
+        verify(jobNodeStorage).getJobNodeData(ConfigurationNode.STREAMING_PROCESS);
     }
     
     @Test

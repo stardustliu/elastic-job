@@ -17,28 +17,18 @@
 
 package com.dangdang.ddframe.job.internal.schedule;
 
+import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
-import org.junit.Test;
-
-import com.dangdang.ddframe.job.api.ElasticJob;
-import com.dangdang.ddframe.job.api.JobScheduler;
 
 public final class JobRegistryTest {
     
     @Test
     public void assertAddJobScheduler() {
-        JobScheduler jobScheduler = mock(JobScheduler.class);
-        JobRegistry.getInstance().addJobScheduler("testJob_AddJobScheduler", jobScheduler);
-        assertThat(JobRegistry.getInstance().getJobScheduler("testJob_AddJobScheduler"), is(jobScheduler));
-    }
-    
-    @Test
-    public void assertAddJobInstance() {
-        ElasticJob elasticJob = mock(ElasticJob.class);
-        JobRegistry.getInstance().addJobInstance("testJob_AddJobInstance", elasticJob);
-        assertThat(JobRegistry.getInstance().getJobInstance("testJob_AddJobInstance"), is(elasticJob));
+        JobScheduleController jobScheduleController = mock(JobScheduleController.class);
+        JobRegistry.getInstance().addJobScheduleController("testJob_AddJobScheduler", jobScheduleController);
+        assertThat(JobRegistry.getInstance().getJobScheduleController("testJob_AddJobScheduler"), is(jobScheduleController));
     }
 }

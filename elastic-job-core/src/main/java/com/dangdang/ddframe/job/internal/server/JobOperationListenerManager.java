@@ -17,7 +17,9 @@
 
 package com.dangdang.ddframe.job.internal.server;
 
+import com.dangdang.ddframe.job.internal.election.LeaderElectionService;
 import com.dangdang.ddframe.job.internal.execution.ExecutionService;
+import com.dangdang.ddframe.job.internal.schedule.JobScheduleController;
 import com.dangdang.ddframe.job.internal.sharding.ShardingService;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
@@ -25,8 +27,7 @@ import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.api.JobScheduler;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
 import com.dangdang.ddframe.job.internal.listener.AbstractJobListener;
 import com.dangdang.ddframe.job.internal.listener.AbstractListenerManager;
 import com.dangdang.ddframe.job.internal.schedule.JobRegistry;
@@ -43,6 +44,8 @@ public class JobOperationListenerManager extends AbstractListenerManager {
     
     private final ServerNode serverNode;
     
+    private final LeaderElectionService leaderElectionService;
+    
     private final ServerService serverService;
     
     private final ShardingService shardingService;
@@ -53,6 +56,7 @@ public class JobOperationListenerManager extends AbstractListenerManager {
         super(coordinatorRegistryCenter, jobConfiguration);
         jobName = jobConfiguration.getJobName();
         serverNode = new ServerNode(jobName);
+        leaderElectionService = new LeaderElectionService(coordinatorRegistryCenter, jobConfiguration);
         serverService = new ServerService(coordinatorRegistryCenter, jobConfiguration);
         shardingService = new ShardingService(coordinatorRegistryCenter, jobConfiguration);
         executionService = new ExecutionService(coordinatorRegistryCenter, jobConfiguration);
@@ -61,7 +65,8 @@ public class JobOperationListenerManager extends AbstractListenerManager {
     @Override
     public void start() {
         addConnectionStateListener(new ConnectionLostListener());
-        addDataListener(new JobStoppedStatusJobListener());
+        addDataListener(new JobTriggerStatusJobListener());
+        addDataListener(new JobPausedStatusJobListener());
         addDataListener(new JobShutdownStatusJobListener());
     }
     
@@ -69,36 +74,57 @@ public class JobOperationListenerManager extends AbstractListenerManager {
         
         @Override
         public void stateChanged(final CuratorFramework client, final ConnectionState newState) {
-            JobScheduler jobScheduler = JobRegistry.getInstance().getJobScheduler(jobName);
+            JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
             if (ConnectionState.LOST == newState) {
-                jobScheduler.stopJob();
+                jobScheduleController.pauseJob();
             } else if (ConnectionState.RECONNECTED == newState) {
+                if (!leaderElectionService.hasLeader()) {
+                    leaderElectionService.leaderElection();
+                }
                 serverService.persistServerOnline();
                 executionService.clearRunningInfo(shardingService.getLocalHostShardingItems());
-                if (!serverService.isJobStoppedManually()) {
-                    jobScheduler.resumeJob();
+                if (!serverService.isJobPausedManually()) {
+                    jobScheduleController.resumeJob();
                 }
             }
         }
     }
     
-    class JobStoppedStatusJobListener extends AbstractJobListener {
+    class JobTriggerStatusJobListener extends AbstractJobListener {
         
         @Override
         protected void dataChanged(final CuratorFramework client, final TreeCacheEvent event, final String path) {
-            if (!serverNode.isJobStoppedPath(path)) {
+            if (Type.NODE_ADDED != event.getType() || !serverNode.isLocalJobTriggerPath(path)) {
                 return;
             }
-            JobScheduler jobScheduler = JobRegistry.getInstance().getJobScheduler(jobName);
-            if (null == jobScheduler) {
+            serverService.clearJobTriggerStatus();
+            JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
+            if (null == jobScheduleController) {
+                return;
+            }
+            if (serverService.isLocalhostServerReady()) {
+                jobScheduleController.triggerJob();
+            }
+        }
+    }
+    
+    class JobPausedStatusJobListener extends AbstractJobListener {
+        
+        @Override
+        protected void dataChanged(final CuratorFramework client, final TreeCacheEvent event, final String path) {
+            if (!serverNode.isLocalJobPausedPath(path)) {
+                return;
+            }
+            JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
+            if (null == jobScheduleController) {
                 return;
             }
             if (Type.NODE_ADDED == event.getType()) {
-                jobScheduler.stopJob();
+                jobScheduleController.pauseJob();
             }
             if (Type.NODE_REMOVED == event.getType()) {
-                jobScheduler.resumeJob();
-                serverService.clearJobStoppedStatus();
+                jobScheduleController.resumeJob();
+                serverService.clearJobPausedStatus();
             }
         }
     }
@@ -107,12 +133,12 @@ public class JobOperationListenerManager extends AbstractListenerManager {
         
         @Override
         protected void dataChanged(final CuratorFramework client, final TreeCacheEvent event, final String path) {
-            if (!serverNode.isJobShutdownPath(path)) {
+            if (!serverNode.isLocalJobShutdownPath(path)) {
                 return;
             }
-            JobScheduler jobScheduler = JobRegistry.getInstance().getJobScheduler(jobName);
-            if (null != jobScheduler && Type.NODE_ADDED == event.getType()) {
-                jobScheduler.shutdown();
+            JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
+            if (null != jobScheduleController && Type.NODE_ADDED == event.getType()) {
+                jobScheduleController.shutdown();
                 serverService.processServerShutdown();
             }
         }

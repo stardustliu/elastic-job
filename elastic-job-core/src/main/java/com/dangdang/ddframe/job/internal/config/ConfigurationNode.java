@@ -26,7 +26,9 @@ import com.dangdang.ddframe.job.internal.storage.JobNodePath;
  */
 public final class ConfigurationNode {
     
-    static final String ROOT = "config";
+    private static final String ROOT = "config";
+    
+    static final String JOB_TYPE = ROOT + "/jobType";
     
     static final String JOB_CLASS = ROOT + "/jobClass";
     
@@ -46,6 +48,8 @@ public final class ConfigurationNode {
     
     static final String FETCH_DATA_COUNT = ROOT + "/fetchDataCount";
     
+    static final String STREAMING_PROCESS = ROOT + "/streamingProcess";
+    
     static final String MAX_TIME_DIFF_SECONDS = ROOT + "/maxTimeDiffSeconds";
     
     static final String FAILOVER = ROOT + "/failover";
@@ -57,6 +61,8 @@ public final class ConfigurationNode {
     static final String DESCRIPTION = ROOT + "/description";
     
     static final String MONITOR_PORT = ROOT + "/monitorPort";
+
+    static final String SCRIPT_COMMAND_LINE = ROOT + "/scriptCommandLine";
     
     private final JobNodePath jobNodePath;
     

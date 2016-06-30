@@ -17,8 +17,10 @@
 
 package com.dangdang.ddframe.job.internal.guarantee;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfigurationFactory;
 import com.dangdang.ddframe.job.fixture.TestJob;
+import com.dangdang.ddframe.job.internal.config.ConfigurationService;
 import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +40,10 @@ public final class GuaranteeServiceTest {
     @Mock
     private JobNodeStorage jobNodeStorage;
     
-    private final JobConfiguration jobConfig = new JobConfiguration("testJob", TestJob.class, 3, "0/1 * * * * ?");
+    @Mock
+    private ConfigurationService configService;
+    
+    private final JobConfiguration jobConfig = JobConfigurationFactory.createSimpleJobConfigurationBuilder("testJob", TestJob.class, 3, "0/1 * * * * ?").overwrite(true).build();
     
     private final GuaranteeService guaranteeService = new GuaranteeService(null, jobConfig);
     
@@ -46,72 +51,75 @@ public final class GuaranteeServiceTest {
     public void setUp() throws NoSuchFieldException {
         MockitoAnnotations.initMocks(this);
         ReflectionUtils.setFieldValue(guaranteeService, "jobNodeStorage", jobNodeStorage);
+        ReflectionUtils.setFieldValue(guaranteeService, "configService", configService);
         when(jobNodeStorage.getJobConfiguration()).thenReturn(jobConfig);
-        jobConfig.setOverwrite(true);
     }
     
     @Test
-    public void testRegisterStart() {
+    public void assertRegisterStart() {
         guaranteeService.registerStart(Arrays.asList(0, 1));
         verify(jobNodeStorage).createJobNodeIfNeeded("guarantee/started/0");
         verify(jobNodeStorage).createJobNodeIfNeeded("guarantee/started/1");
     }
     
     @Test
-    public void testIsNotAllStartedWhenRootNodeIsNotExisted() {
+    public void assertIsNotAllStartedWhenRootNodeIsNotExisted() {
         when(jobNodeStorage.isJobNodeExisted("guarantee/started")).thenReturn(false);
         assertFalse(guaranteeService.isAllStarted());
     }
     
     @Test
-    public void testIsNotAllStarted() {
+    public void assertIsNotAllStarted() {
         when(jobNodeStorage.isJobNodeExisted("guarantee/started")).thenReturn(true);
         when(jobNodeStorage.getJobNodeChildrenKeys("guarantee/started")).thenReturn(Arrays.asList("0", "1"));
         assertFalse(guaranteeService.isAllStarted());
     }
     
     @Test
-    public void testIsAllStarted() {
+    public void assertIsAllStarted() {
         when(jobNodeStorage.isJobNodeExisted("guarantee/started")).thenReturn(true);
+        when(configService.getShardingTotalCount()).thenReturn(3);
         when(jobNodeStorage.getJobNodeChildrenKeys("guarantee/started")).thenReturn(Arrays.asList("0", "1", "2"));
         assertTrue(guaranteeService.isAllStarted());
     }
     
     @Test
-    public void testClearAllStartedInfo() {
+    public void assertClearAllStartedInfo() {
         guaranteeService.clearAllStartedInfo();
         verify(jobNodeStorage).removeJobNodeIfExisted("guarantee/started");
     }
     
     @Test
-    public void testRegisterComplete() {
+    public void assertRegisterComplete() {
         guaranteeService.registerComplete(Arrays.asList(0, 1));
         verify(jobNodeStorage).createJobNodeIfNeeded("guarantee/completed/0");
         verify(jobNodeStorage).createJobNodeIfNeeded("guarantee/completed/1");
     }
     
     @Test
-    public void testIsNotAllCompletedWhenRootNodeIsNotExisted() {
+    public void assertIsNotAllCompletedWhenRootNodeIsNotExisted() {
         when(jobNodeStorage.isJobNodeExisted("guarantee/completed")).thenReturn(false);
         assertFalse(guaranteeService.isAllCompleted());
     }
     
     @Test
-    public void testIsNotAllCompleted() {
+    public void assertIsNotAllCompleted() {
+        when(configService.getShardingTotalCount()).thenReturn(10);
         when(jobNodeStorage.isJobNodeExisted("guarantee/completed")).thenReturn(true);
         when(jobNodeStorage.getJobNodeChildrenKeys("guarantee/completed")).thenReturn(Arrays.asList("0", "1"));
         assertFalse(guaranteeService.isAllCompleted());
     }
     
     @Test
-    public void testIsAllCompleted() {
+    public void assertIsAllCompleted() {
         when(jobNodeStorage.isJobNodeExisted("guarantee/completed")).thenReturn(true);
+        when(configService.getShardingTotalCount()).thenReturn(3);
         when(jobNodeStorage.getJobNodeChildrenKeys("guarantee/completed")).thenReturn(Arrays.asList("0", "1", "2"));
         assertTrue(guaranteeService.isAllCompleted());
     }
     
     @Test
-    public void testClearAllCompletedInfo() {
+    public void assertClearAllCompletedInfo() {
         guaranteeService.clearAllCompletedInfo();
         verify(jobNodeStorage).removeJobNodeIfExisted("guarantee/completed");
     }

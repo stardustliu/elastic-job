@@ -20,7 +20,6 @@ package com.dangdang.ddframe.job.plugin.job.type.dataflow.sequence.streaming;
 import com.dangdang.ddframe.job.plugin.job.type.ElasticJobAssert;
 import com.dangdang.ddframe.job.plugin.job.type.dataflow.sequence.AbstractSequenceDataFlowElasticJobTest;
 import org.junit.Test;
-import org.quartz.JobExecutionException;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,17 +32,38 @@ public abstract class AbstractStreamingSequenceDataFlowElasticJobTest extends Ab
     
     @SuppressWarnings("unchecked")
     @Test
-    public void assertExecuteWhenFetchDataIsNotEmpty() throws JobExecutionException {
+    public void assertExecuteWhenFetchDataIsNotEmptyAndIsEligibleForJobRunning() {
         when(getJobFacade().isEligibleForJobRunning()).thenReturn(true);
         when(getJobCaller().fetchData(0)).thenReturn(Arrays.<Object>asList(1, 2), Collections.emptyList());
         when(getJobCaller().fetchData(1)).thenReturn(Arrays.<Object>asList(3, 4), Collections.emptyList());
         when(getJobCaller().processData(1)).thenReturn(true);
         when(getJobCaller().processData(2)).thenReturn(true);
         when(getJobCaller().processData(3)).thenReturn(false);
-        when(getJobCaller().processData(4)).thenThrow(new NullPointerException());
-        getDataFlowElasticJob().execute(null);
+        when(getJobCaller().processData(4)).thenThrow(new IllegalStateException());
+        getDataFlowElasticJob().execute();
         verify(getJobCaller(), times(2)).fetchData(0);
         verify(getJobCaller(), times(2)).fetchData(1);
+        verify(getJobCaller()).processData(1);
+        verify(getJobCaller()).processData(2);
+        verify(getJobCaller()).processData(3);
+        verify(getJobCaller()).processData(4);
+        ElasticJobAssert.verifyForIsNotMisfire(getJobFacade(), getShardingContext());
+        ElasticJobAssert.assertProcessCountStatistics(2, 2);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void assertExecuteWhenFetchDataIsNotEmptyAndIsNotEligibleForJobRunning() {
+        when(getJobFacade().isEligibleForJobRunning()).thenReturn(false);
+        when(getJobCaller().fetchData(0)).thenReturn(Arrays.<Object>asList(1, 2));
+        when(getJobCaller().fetchData(1)).thenReturn(Arrays.<Object>asList(3, 4));
+        when(getJobCaller().processData(1)).thenReturn(true);
+        when(getJobCaller().processData(2)).thenReturn(true);
+        when(getJobCaller().processData(3)).thenReturn(false);
+        when(getJobCaller().processData(4)).thenThrow(new IllegalStateException());
+        getDataFlowElasticJob().execute();
+        verify(getJobCaller()).fetchData(0);
+        verify(getJobCaller()).fetchData(1);
         verify(getJobCaller()).processData(1);
         verify(getJobCaller()).processData(2);
         verify(getJobCaller()).processData(3);

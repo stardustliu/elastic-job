@@ -17,15 +17,15 @@
 
 package com.dangdang.ddframe.job.spring.schedule;
 
-import java.util.Properties;
-
+import com.dangdang.ddframe.job.api.JobScheduler;
 import com.dangdang.ddframe.job.api.listener.ElasticJobListener;
+import com.dangdang.ddframe.job.spring.namespace.parser.common.AbstractJobConfigurationDto;
+import com.dangdang.ddframe.job.spring.util.AopTargetUtils;
+import com.dangdang.ddframe.reg.base.CoordinatorRegistryCenter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.api.JobScheduler;
-import com.dangdang.ddframe.reg.base.CoordinatorRegistryCenter;
+import java.util.Properties;
 
 /**
  * 基于Spring的作业启动器.
@@ -36,12 +36,20 @@ public class SpringJobScheduler extends JobScheduler implements ApplicationConte
     
     private ApplicationContext applicationContext;
     
-    public SpringJobScheduler(final CoordinatorRegistryCenter coordinatorRegistryCenter, final JobConfiguration jobConfiguration) {
-        super(coordinatorRegistryCenter, jobConfiguration);
+    public SpringJobScheduler(final CoordinatorRegistryCenter coordinatorRegistryCenter, final AbstractJobConfigurationDto jobConfigurationDto) {
+        super(coordinatorRegistryCenter, jobConfigurationDto.toJobConfiguration());
     }
     
-    public SpringJobScheduler(final CoordinatorRegistryCenter coordinatorRegistryCenter, final JobConfiguration jobConfiguration, final ElasticJobListener[] elasticJobListeners) {
-        super(coordinatorRegistryCenter, jobConfiguration, elasticJobListeners);
+    public SpringJobScheduler(final CoordinatorRegistryCenter coordinatorRegistryCenter, final AbstractJobConfigurationDto jobConfigurationDto, final ElasticJobListener[] elasticJobListeners) {
+        super(coordinatorRegistryCenter, jobConfigurationDto.toJobConfiguration(), getTargetElasticJobListeners(elasticJobListeners));
+    }
+    
+    private static ElasticJobListener[] getTargetElasticJobListeners(final ElasticJobListener[] elasticJobListeners) {
+        final ElasticJobListener[] result = new ElasticJobListener[elasticJobListeners.length];
+        for (int i = 0; i < elasticJobListeners.length; i++) {
+            result[i] = (ElasticJobListener) AopTargetUtils.getTarget(elasticJobListeners[i]);
+        }
+        return result;
     }
     
     @Override

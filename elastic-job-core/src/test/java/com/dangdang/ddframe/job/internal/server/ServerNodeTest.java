@@ -43,6 +43,11 @@ public final class ServerNodeTest {
     }
     
     @Test
+    public void assertGetTriggerNode() {
+        assertThat(ServerNode.getTriggerNode("host0"), is("servers/host0/trigger"));
+    }
+    
+    @Test
     public void assertGetDisabledNode() {
         assertThat(ServerNode.getDisabledNode("host0"), is("servers/host0/disabled"));
     }
@@ -58,13 +63,33 @@ public final class ServerNodeTest {
     }
     
     @Test
-    public void assertStoppedNode() {
-        assertThat(ServerNode.getStoppedNode("host0"), is("servers/host0/stoped"));
+    public void assertPausedNode() {
+        assertThat(ServerNode.getPausedNode("host0"), is("servers/host0/paused"));
     }
     
     @Test
     public void assertShutdownNode() {
         assertThat(ServerNode.getShutdownNode("host0"), is("servers/host0/shutdown"));
+    }
+    
+    @Test
+    public void assertIsLocalJobTriggerPath() {
+        assertTrue(serverNode.isLocalJobTriggerPath("/testJob/servers/" + localHostService.getIp() + "/trigger"));
+    }
+    
+    @Test
+    public void assertIsLocalJobPausedPath() {
+        assertTrue(serverNode.isLocalJobPausedPath("/testJob/servers/" + localHostService.getIp() + "/paused"));
+    }
+    
+    @Test
+    public void assertIsLocalJobShutdownPath() {
+        assertTrue(serverNode.isLocalJobShutdownPath("/testJob/servers/" + localHostService.getIp() + "/shutdown"));
+    }
+    
+    @Test
+    public void assertIsLocalServerDisabledPath() {
+        assertTrue(serverNode.isLocalServerDisabledPath("/testJob/servers/" + localHostService.getIp() + "/disabled"));
     }
     
     @Test
@@ -82,12 +107,9 @@ public final class ServerNodeTest {
     }
     
     @Test
-    public void assertIsJobStoppedPath() {
-        assertTrue(serverNode.isJobStoppedPath("/testJob/servers/" + localHostService.getIp() + "/stoped"));
-    }
-    
-    @Test
-    public void assertIsJobShutdownPath() {
-        assertTrue(serverNode.isJobShutdownPath("/testJob/servers/" + localHostService.getIp() + "/shutdown"));
+    public void assertIsServerShutdownPath() {
+        assertTrue(serverNode.isServerShutdownPath("/testJob/servers/host0/shutdown"));
+        assertFalse(serverNode.isServerShutdownPath("/otherJob/servers/host0/status"));
+        assertFalse(serverNode.isServerShutdownPath("/testJob/servers/host0/status"));
     }
 }

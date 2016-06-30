@@ -6,16 +6,68 @@ weight=1
 
 # Release Notes
 
-## 1.0.6-SNAPSHOT
+## 1.1.1
+
+### 结构调整
+
+1. [ISSUE #116](https://github.com/dangdangdotcom/elastic-job/issues/116) 作业接口的handleJobExecutionException参数变更
+
+### 功能提升
+
+1. [ISSUE #110](https://github.com/dangdangdotcom/elastic-job/issues/110) 手动触发作业
+
+### 缺陷修正
+1. [ISSUE #99](https://github.com/dangdangdotcom/elastic-job/issues/99) 删除作业异步导致作业删除后, 还未结束的作业继续创建zk数据
+
+## 1.1.0
+
+### 结构调整
+
+1. [ISSUE #97](https://github.com/dangdangdotcom/elastic-job/issues/97) JobConfiguration重构为SimpleJobConfiguration，DataFlowJobConfiguration，ScriptJobConfiguration
+1. [ISSUE #102](https://github.com/dangdangdotcom/elastic-job/issues/102) 重新定义Java/Spring Config API，使用Factory+Builder模式代替原有的Constructor+Setter模式
+1. [ISSUE #104](https://github.com/dangdangdotcom/elastic-job/issues/104) 移除@Deprecated代码
+1. [ISSUE #105](https://github.com/dangdangdotcom/elastic-job/issues/105) 重构Spring命名空间驼峰式定义
+1. [ISSUE #106](https://github.com/dangdangdotcom/elastic-job/issues/106) isStreaming配置化
+1. [ISSUE #107](https://github.com/dangdangdotcom/elastic-job/issues/107) reg-center更名为registry-center-ref
+
+## 1.0.8
+
+### 新功能
+
+1. [ISSUE #95](https://github.com/dangdangdotcom/elastic-job/issues/95) 增加脚本类型作业支持
+
+## 1.0.7
+
+### 结构调整
+
+1. [ISSUE #88](https://github.com/dangdangdotcom/elastic-job/issues/88) stop作业改名为pause
+
+### 新功能
+
+1. [ISSUE #91](https://github.com/dangdangdotcom/elastic-job/issues/91) 作业生命周期操作API
+
+### 功能提升
+
+1. [ISSUE #84](https://github.com/dangdangdotcom/elastic-job/issues/84) 控制台提供作业启用/禁用按钮操作
+1. [ISSUE #87](https://github.com/dangdangdotcom/elastic-job/issues/87) 调整主节点选举流程，作业关闭，禁用和暂停将触发主节点选举
+1. [ISSUE #93](https://github.com/dangdangdotcom/elastic-job/issues/93) 注册中心配置提供baseSleepTimeMilliseconds、maxSleepTimeMilliseconds和maxRetries的默认值
+
+### 缺陷修正
+1. [ISSUE #92](https://github.com/dangdangdotcom/elastic-job/issues/92) 修改分片总数参数导致仅单一节点执行的监听抛出超时异常
+
+## 1.0.6
 
 ### 功能提升
 
 1. [ISSUE #71](https://github.com/dangdangdotcom/elastic-job/issues/71) 作业关闭功能（shutdown）
 1. [ISSUE #72](https://github.com/dangdangdotcom/elastic-job/issues/72) 关闭的作业可删除
+1. [ISSUE #81](https://github.com/dangdangdotcom/elastic-job/issues/81) 使用集中清理作业上次结束状态代替各自清理，各自清理可能导致作业机下线而产生未清理的结束状态
 
 ### 缺陷修正
 
-1. [ISSUE #69](https://github.com/dangdangdotcom/elastic-job/issues/69) 分片时如在Zk中有的作业服务器sharding节点不存在将导致无法重新分片
+1. [ISSUE #74](https://github.com/dangdangdotcom/elastic-job/issues/74) 流式处理且失效转移时，失效转移的分片项不能执行一次即停止
+1. [ISSUE #77](https://github.com/dangdangdotcom/elastic-job/issues/77) dataflow类型作业，fetchData如果有数据，则应与processData成对执行
+1. [ISSUE #78](https://github.com/dangdangdotcom/elastic-job/issues/78) Spring方式配置作业监听启用AOP导致不能正常使用问题
 
 ## 1.0.5
 
@@ -30,6 +82,7 @@ weight=1
 
 1. [ISSUE #61](https://github.com/dangdangdotcom/elastic-job/issues/61) 分片和主节点选举同时发生时，死锁问题解决
 1. [ISSUE #63](https://github.com/dangdangdotcom/elastic-job/issues/63) 获取作业TreeCache时可能会获取到前缀相同的其他作业的TreeCache
+1. [ISSUE #69](https://github.com/dangdangdotcom/elastic-job/issues/69) 分片时如在Zk中有的作业服务器sharding节点不存在将导致无法重新分片
 
 ### 结构调整
 

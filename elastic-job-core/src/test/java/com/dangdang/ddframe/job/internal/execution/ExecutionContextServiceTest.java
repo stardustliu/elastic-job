@@ -17,15 +17,16 @@
 
 package com.dangdang.ddframe.job.internal.execution;
 
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
+import com.dangdang.ddframe.job.api.config.JobConfiguration;
+import com.dangdang.ddframe.job.api.config.JobConfigurationFactory;
+import com.dangdang.ddframe.job.fixture.TestJob;
+import com.dangdang.ddframe.job.internal.config.ConfigurationService;
+import com.dangdang.ddframe.job.internal.env.LocalHostService;
+import com.dangdang.ddframe.job.api.config.impl.JobType;
+import com.dangdang.ddframe.job.internal.offset.OffsetService;
+import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -33,16 +34,14 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 import org.unitils.util.ReflectionUtils;
 
-import com.dangdang.ddframe.job.api.JobConfiguration;
-import com.dangdang.ddframe.job.api.JobExecutionMultipleShardingContext;
-import com.dangdang.ddframe.job.fixture.TestJob;
-import com.dangdang.ddframe.job.internal.config.ConfigurationService;
-import com.dangdang.ddframe.job.internal.env.LocalHostService;
-import com.dangdang.ddframe.job.internal.failover.FailoverService;
-import com.dangdang.ddframe.job.internal.offset.OffsetService;
-import com.dangdang.ddframe.job.internal.sharding.ShardingService;
-import com.dangdang.ddframe.job.internal.storage.JobNodeStorage;
-import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public final class ExecutionContextServiceTest {
     
@@ -56,15 +55,9 @@ public final class ExecutionContextServiceTest {
     private ConfigurationService configService;
     
     @Mock
-    private ShardingService shardingService;
-    
-    @Mock
-    private FailoverService failoverService;
-    
-    @Mock
     private OffsetService offsetService;
     
-    private final JobConfiguration jobConfig = new JobConfiguration("testJob", TestJob.class, 3, "0/1 * * * * ?");
+    private final JobConfiguration jobConfig = JobConfigurationFactory.createSimpleJobConfigurationBuilder("testJob", TestJob.class, 3, "0/1 * * * * ?").build();
     
     private final ExecutionContextService executionContextService = new ExecutionContextService(null, jobConfig);
     
@@ -73,8 +66,6 @@ public final class ExecutionContextServiceTest {
         MockitoAnnotations.initMocks(this);
         ReflectionUtils.setFieldValue(executionContextService, "jobNodeStorage", jobNodeStorage);
         ReflectionUtils.setFieldValue(executionContextService, "configService", configService);
-        ReflectionUtils.setFieldValue(executionContextService, "shardingService", shardingService);
-        ReflectionUtils.setFieldValue(executionContextService, "failoverService", failoverService);
         ReflectionUtils.setFieldValue(executionContextService, "offsetService", offsetService);
         when(localHostService.getIp()).thenReturn("mockedIP");
         when(localHostService.getHostName()).thenReturn("mockedHostName");
@@ -84,18 +75,16 @@ public final class ExecutionContextServiceTest {
     @Test
     public void assertGetJobExecutionShardingContextWhenNotAssignShardingItem() {
         when(configService.getShardingTotalCount()).thenReturn(3);
-        when(shardingService.getLocalHostShardingItems()).thenReturn(Collections.<Integer>emptyList());
         when(configService.isFailover()).thenReturn(false);
         when(configService.isMonitorExecution()).thenReturn(false);
+        when(configService.getJobType()).thenReturn(JobType.DATA_FLOW);
         when(configService.getFetchDataCount()).thenReturn(10);
         JobExecutionMultipleShardingContext expected = new JobExecutionMultipleShardingContext();
         expected.setJobName("testJob");
         expected.setShardingTotalCount(3);
         expected.setFetchDataCount(10);
-        assertThat(executionContextService.getJobExecutionShardingContext(), new ReflectionEquals(expected));
+        assertThat(executionContextService.getJobExecutionShardingContext(Collections.<Integer>emptyList()), new ReflectionEquals(expected));
         verify(configService).getShardingTotalCount();
-        verify(shardingService).getLocalHostShardingItems();
-        verify(configService).isFailover();
         verify(configService).isMonitorExecution();
         verify(configService).getFetchDataCount();
     }
@@ -103,9 +92,9 @@ public final class ExecutionContextServiceTest {
     @Test
     public void assertGetJobExecutionShardingContextWhenAssignShardingItems() {
         when(configService.getShardingTotalCount()).thenReturn(3);
-        when(shardingService.getLocalHostShardingItems()).thenReturn(Arrays.asList(0, 1));
         when(configService.isFailover()).thenReturn(false);
         when(configService.isMonitorExecution()).thenReturn(false);
+        when(configService.getJobType()).thenReturn(JobType.DATA_FLOW);
         when(configService.getFetchDataCount()).thenReturn(10);
         Map<Integer, String> shardingItemParameters = new HashMap<>(3);
         shardingItemParameters.put(0, "A");
@@ -124,100 +113,22 @@ public final class ExecutionContextServiceTest {
         expected.getShardingItemParameters().put(0, "A");
         expected.getShardingItemParameters().put(1, "B");
         expected.setOffsets(offsets);
-        assertThat(executionContextService.getJobExecutionShardingContext(), new ReflectionEquals(expected));
+        assertThat(executionContextService.getJobExecutionShardingContext(Arrays.asList(0, 1)), new ReflectionEquals(expected));
         verify(configService).getShardingTotalCount();
-        verify(shardingService).getLocalHostShardingItems();
-        verify(configService).isFailover();
         verify(configService).isMonitorExecution();
         verify(configService).getFetchDataCount();
         verify(configService).getShardingItemParameters();
         verify(offsetService).getOffsets(Arrays.asList(0, 1));
-    }
-    
-    @Test
-    public void assertGetJobExecutionShardingContextWhenEnableFailover() {
-        when(configService.getShardingTotalCount()).thenReturn(3);
-        when(shardingService.getLocalHostShardingItems()).thenReturn(Arrays.asList(0, 1));
-        when(configService.isFailover()).thenReturn(true);
-        when(failoverService.getLocalHostFailoverItems()).thenReturn(Collections.<Integer>emptyList());
-        when(failoverService.getLocalHostTakeOffItems()).thenReturn(Collections.<Integer>emptyList());
-        when(configService.isMonitorExecution()).thenReturn(true);
-        when(jobNodeStorage.isJobNodeExisted("execution/0/running")).thenReturn(false);
-        when(jobNodeStorage.isJobNodeExisted("execution/1/running")).thenReturn(false);
-        when(configService.getFetchDataCount()).thenReturn(10);
-        when(configService.getShardingItemParameters()).thenReturn(Collections.<Integer, String>emptyMap());
-        Map<Integer, String> offsets = new HashMap<>(2);
-        offsets.put(0, "offset0");
-        offsets.put(1, "offset1");
-        when(offsetService.getOffsets(Arrays.asList(0, 1))).thenReturn(offsets);
-        JobExecutionMultipleShardingContext expected = new JobExecutionMultipleShardingContext();
-        expected.setJobName("testJob");
-        expected.setShardingTotalCount(3);
-        expected.setFetchDataCount(10);
-        expected.setShardingItems(Arrays.asList(0, 1));
-        expected.setMonitorExecution(true);
-        expected.setOffsets(offsets);
-        assertThat(executionContextService.getJobExecutionShardingContext(), new ReflectionEquals(expected));
-        verify(configService).getShardingTotalCount();
-        verify(shardingService).getLocalHostShardingItems();
-        verify(configService).isFailover();
-        verify(failoverService).getLocalHostFailoverItems();
-        verify(failoverService).getLocalHostTakeOffItems();
-        verify(configService).isMonitorExecution();
-        verify(jobNodeStorage).isJobNodeExisted("execution/0/running");
-        verify(jobNodeStorage).isJobNodeExisted("execution/1/running");
-        verify(configService).getFetchDataCount();
-        verify(configService).getShardingItemParameters();
-        verify(offsetService).getOffsets(Arrays.asList(0, 1));
-    }
-    
-    @Test
-    public void assertGetJobExecutionShardingContextWhenEnableFailoverAndForTakeOff() {
-        when(configService.getShardingTotalCount()).thenReturn(3);
-        when(shardingService.getLocalHostShardingItems()).thenReturn(Arrays.asList(0, 1));
-        when(configService.isFailover()).thenReturn(true);
-        when(failoverService.getLocalHostFailoverItems()).thenReturn(Collections.singletonList(1));
-        when(configService.isMonitorExecution()).thenReturn(true);
-        when(jobNodeStorage.isJobNodeExisted("execution/1/running")).thenReturn(false);
-        when(configService.getFetchDataCount()).thenReturn(10);
-        Map<Integer, String> shardingItemParameters = new HashMap<>(3);
-        shardingItemParameters.put(0, "A");
-        shardingItemParameters.put(1, "B");
-        shardingItemParameters.put(2, "C");
-        when(configService.getShardingItemParameters()).thenReturn(shardingItemParameters);
-        Map<Integer, String> offsets = new HashMap<>(1);
-        offsets.put(1, "offset1");
-        when(offsetService.getOffsets(Collections.singletonList(1))).thenReturn(offsets);
-        JobExecutionMultipleShardingContext expected = new JobExecutionMultipleShardingContext();
-        expected.setJobName("testJob");
-        expected.setShardingTotalCount(3);
-        expected.setFetchDataCount(10);
-        expected.setShardingItems(Collections.singletonList(1));
-        expected.getShardingItemParameters().put(1, "B");
-        expected.setMonitorExecution(true);
-        expected.setOffsets(offsets);
-        assertThat(executionContextService.getJobExecutionShardingContext(), new ReflectionEquals(expected));
-        verify(configService).getShardingTotalCount();
-        verify(shardingService).getLocalHostShardingItems();
-        verify(configService).isFailover();
-        verify(failoverService).getLocalHostFailoverItems();
-        verify(configService).isMonitorExecution();
-        verify(jobNodeStorage).isJobNodeExisted("execution/1/running");
-        verify(configService).getFetchDataCount();
-        verify(configService).getShardingItemParameters();
-        verify(offsetService).getOffsets(Collections.singletonList(1));
     }
     
     @Test
     public void assertGetJobExecutionShardingContextWhenHasRunningItems() {
         when(configService.getShardingTotalCount()).thenReturn(3);
-        when(shardingService.getLocalHostShardingItems()).thenReturn(Lists.newArrayList(0, 1));
         when(configService.isFailover()).thenReturn(true);
-        when(failoverService.getLocalHostFailoverItems()).thenReturn(Collections.<Integer>emptyList());
-        when(failoverService.getLocalHostTakeOffItems()).thenReturn(Collections.<Integer>emptyList());
         when(configService.isMonitorExecution()).thenReturn(true);
         when(jobNodeStorage.isJobNodeExisted("execution/0/running")).thenReturn(false);
         when(jobNodeStorage.isJobNodeExisted("execution/1/running")).thenReturn(true);
+        when(configService.getJobType()).thenReturn(JobType.DATA_FLOW);
         when(configService.getFetchDataCount()).thenReturn(10);
         Map<Integer, String> shardingItemParameters = new HashMap<>(3);
         shardingItemParameters.put(0, "A");
@@ -235,12 +146,8 @@ public final class ExecutionContextServiceTest {
         expected.getShardingItemParameters().put(0, "A");
         expected.setMonitorExecution(true);
         expected.setOffsets(offsets);
-        assertThat(executionContextService.getJobExecutionShardingContext(), new ReflectionEquals(expected));
+        assertThat(executionContextService.getJobExecutionShardingContext(Lists.newArrayList(0, 1)), new ReflectionEquals(expected));
         verify(configService).getShardingTotalCount();
-        verify(shardingService).getLocalHostShardingItems();
-        verify(configService).isFailover();
-        verify(failoverService).getLocalHostFailoverItems();
-        verify(failoverService).getLocalHostTakeOffItems();
         verify(configService).isMonitorExecution();
         verify(jobNodeStorage).isJobNodeExisted("execution/0/running");
         verify(jobNodeStorage).isJobNodeExisted("execution/1/running");
